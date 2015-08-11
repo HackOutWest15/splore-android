@@ -50,12 +50,19 @@ public class MainActivity extends Activity implements
         buildGoogleApiClient();
         mGoogleApiClient.connect();
 
+        SharedPreferences settings = getSharedPreferences("PREFS_NAME", 0);
+
+        String UserID = settings.getString("USER_ID", "-1");
+        Log.d("USER_ID", "ID in MainActvity" + " " + UserID);
+
         mWebView = (WebView) findViewById(R.id.webview);
         WebSettings webSettings = mWebView.getSettings();
         webSettings.setJavaScriptEnabled(true);
         mWebView.setWebViewClient(new SploreWebViewClient());
         mWebView.addJavascriptInterface(new SploreWebInterface(this), "Android");
         mWebView.loadUrl("http://www.google.com/");
+
+
 
     }
 
