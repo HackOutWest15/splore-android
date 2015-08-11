@@ -8,6 +8,7 @@ import com.hackoutwest.core.splore.util.SystemUiHider;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
@@ -44,6 +45,12 @@ public class MainActivity extends Activity implements
         mGoogleApiClient.connect();
 
         mFullScreenText = (TextView) findViewById(R.id.fullscreen_content);
+
+        SharedPreferences settings = getSharedPreferences("PREFS_NAME", 0);
+
+        String UserID = settings.getString("USER_ID", "-1");
+        Log.d("USER_ID", "ID in MainActvity" + " " + UserID);
+
 
 
     }
