@@ -70,8 +70,8 @@ public class SploreLocationService extends Service  {
 
         LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         MyLocationListener listener = new MyLocationListener();
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, listener);
-        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, listener);
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 100, listener);
+        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 100, listener);
 
         Intent i = new Intent(this, MainActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(this,0,i,0);
