@@ -5,28 +5,34 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 import com.hackoutwest.core.splore.util.SystemUiHider;
 
-import android.annotation.TargetApi;
 import android.app.ActionBar;
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
-import android.location.LocationProvider;
-import android.os.Build;
+import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
 import android.util.Log;
 import android.view.KeyEvent;
-import android.view.MotionEvent;
 import android.view.View;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.Button;
-import android.widget.TextView;
+
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
+
+import javax.xml.transform.Result;
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -59,14 +65,20 @@ public class MainActivity extends Activity implements
         Log.d("USER_ID", "ID in MainActvity" + " " + UserID);
 
         mWebView = (WebView) findViewById(R.id.webview);
-        Button mButton = (Button) findViewById(R.id.button);
-        mButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                intiLocationUpdates();
-            }
-        });
 
+        BroadcastReceiver receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                double longitud = intent.getDoubleExtra("LONGITUD", 0);
+                double latitude = intent.getDoubleExtra("LATITUDE", 0);
+                new LocationTask().execute(latitude, longitud);
+
+            }
+        };
+        registerReceiver(receiver, new IntentFilter("com.hackoutwest.broadcast.gps.location_change"));
+
+        Intent servIntent = new Intent(this, SploreLocationService.class);
+        startService(servIntent);
 
         WebSettings webSettings = mWebView.getSettings();
         webSettings.setJavaScriptEnabled(true);
@@ -74,9 +86,12 @@ public class MainActivity extends Activity implements
         mWebView.addJavascriptInterface(new SploreWebInterface(this), "Android");
         mWebView.loadUrl("http://10.47.12.93:3000");
 
-        testLocationService();
-
     }
+
+    private String locationToJSON(double lat, double lon) {
+        return "{'location':{'lat':"+lat+",'long':"+lon+"}}";
+    }
+
 
     protected synchronized void buildGoogleApiClient() {
         mGoogleApiClient = new GoogleApiClient.Builder(this)
@@ -118,19 +133,6 @@ public class MainActivity extends Activity implements
         return super.onKeyDown(keyCode, event);
     }
 
-    private void testLocationService() {
-        Intent servIntent = new Intent(this, SploreLocationService.class);
-        startService(servIntent);
-    }
-
-    private void intiLocationUpdates() {
-        SploreLocationService locationService = new SploreLocationService();
-        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 100, locationService);
-        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 100, locationService);
-
-    }
-
     private class SploreWebInterface {
 
         Context mContext;
@@ -153,13 +155,58 @@ public class MainActivity extends Activity implements
 
         @JavascriptInterface
         public void startLocationService() {
-            Intent servIntent = new Intent("com.hackoutwest.core.LONGRUNSERVICE");
+            Intent servIntent = new Intent(mContext, SploreLocationService.class);
             startService(servIntent);
-            SploreLocationService locationService = new SploreLocationService();
-            LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 100, locationService);
-            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 100, locationService);
         }
+    }
+
+    private class LocationTask extends AsyncTask<Double, Void, Result> {
+
+        @Override
+        protected Result doInBackground(Double... params) {
+
+            String jsonLocation = locationToJSON(params[0], params[1]);
+
+            try {
+                //url = new URL("http://10.47.12.93:3000/update");
+                URL url = new URL("http://www.google.com");
+                SharedPreferences settings = getSharedPreferences("PREFS_NAME", 0);
+                String userID = settings.getString("USER_ID", "-1");
+
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setReadTimeout(10000);
+                conn.setConnectTimeout(15000);
+                conn.setRequestMethod("POST");
+                conn.setDoInput(true);
+                conn.setDoOutput(true);
+
+                StringBuilder result = new StringBuilder();
+                result.append(URLEncoder.encode("userID", "UTF-8"));
+                result.append("=");
+                result.append(URLEncoder.encode(userID, "UTF-8"));
+                result.append("&");
+                result.append(URLEncoder.encode("location", "UTF-8"));
+                result.append("=");
+                result.append(URLEncoder.encode(jsonLocation, "UTF-8"));
+
+                OutputStream os = conn.getOutputStream();
+                BufferedWriter writer = new BufferedWriter(
+                        new OutputStreamWriter(os, "UTF-8"));
+                writer.write(result.toString());
+                writer.flush();
+                writer.close();
+                os.close();
+
+                conn.connect();
+
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+
     }
 
 }
