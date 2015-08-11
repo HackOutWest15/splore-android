@@ -3,6 +3,7 @@
     package="com.hackoutwest.core.splore" >
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:allowBackup="true"
         android:theme="@style/AppTheme"
@@ -19,6 +20,17 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".SploreLocationService"
+            android:enabled="true"
+            android:exported="true"
+            android:description="@string/service_desc"
+            android:label="@string/app_name" >
+            <intent-filter>
+                <action android:name="com.hackoutwest.core.LONGRUNSERVICE" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>

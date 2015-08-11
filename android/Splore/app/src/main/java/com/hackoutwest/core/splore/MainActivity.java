@@ -9,10 +9,12 @@ import android.annotation.TargetApi;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
+import android.location.LocationProvider;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -23,6 +25,7 @@ import android.view.View;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.widget.Button;
 import android.widget.TextView;
 
 /**
@@ -56,13 +59,22 @@ public class MainActivity extends Activity implements
         Log.d("USER_ID", "ID in MainActvity" + " " + UserID);
 
         mWebView = (WebView) findViewById(R.id.webview);
+        Button mButton = (Button) findViewById(R.id.button);
+        mButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                intiLocationUpdates();
+            }
+        });
+
+
         WebSettings webSettings = mWebView.getSettings();
         webSettings.setJavaScriptEnabled(true);
         mWebView.setWebViewClient(new SploreWebViewClient());
         mWebView.addJavascriptInterface(new SploreWebInterface(this), "Android");
-        mWebView.loadUrl("http://www.google.com/");
+        mWebView.loadUrl("http://10.47.12.93:3000");
 
-
+        testLocationService();
 
     }
 
@@ -106,6 +118,19 @@ public class MainActivity extends Activity implements
         return super.onKeyDown(keyCode, event);
     }
 
+    private void testLocationService() {
+        Intent servIntent = new Intent(this, SploreLocationService.class);
+        startService(servIntent);
+    }
+
+    private void intiLocationUpdates() {
+        SploreLocationService locationService = new SploreLocationService();
+        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 100, locationService);
+        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 100, locationService);
+
+    }
+
     private class SploreWebInterface {
 
         Context mContext;
@@ -124,6 +149,16 @@ public class MainActivity extends Activity implements
         @JavascriptInterface
         public Location getLocation() {
             return mLastLocation;
+        }
+
+        @JavascriptInterface
+        public void startLocationService() {
+            Intent servIntent = new Intent("com.hackoutwest.core.LONGRUNSERVICE");
+            startService(servIntent);
+            SploreLocationService locationService = new SploreLocationService();
+            LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 100, locationService);
+            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 100, locationService);
         }
     }
 
