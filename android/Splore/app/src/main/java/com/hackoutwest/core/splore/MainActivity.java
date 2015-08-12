@@ -80,26 +80,12 @@ public class MainActivity extends Activity implements
 
         mWebView = (WebView) findViewById(R.id.webview);
 
-        BroadcastReceiver receiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                double longitud = intent.getDoubleExtra("LONGITUD", 0);
-                double latitude = intent.getDoubleExtra("LATITUDE", 0);
-                new LocationTask().execute(latitude, longitud);
-
-            }
-        };
-        registerReceiver(receiver, new IntentFilter("com.hackoutwest.broadcast.gps.location_change"));
-
-      //  Intent servIntent = new Intent(this, SploreLocationService.class);
-       // startService(servIntent);
-
         WebSettings webSettings = mWebView.getSettings();
         webSettings.setJavaScriptEnabled(true);
         webSettings.setDomStorageEnabled(true);
         mWebView.setWebViewClient(new SploreWebViewClient());
         mWebView.addJavascriptInterface(new SploreWebInterface(this), "Android");
-        mWebView.loadUrl("http://10.47.12.57:3000");
+        mWebView.loadUrl("http://10.47.12.58:3000");
 
     }
 
@@ -179,77 +165,5 @@ public class MainActivity extends Activity implements
         }
     }
 
-    private class LocationTask extends AsyncTask<Double, Void, Result> {
-
-        @Override
-        protected Result doInBackground(Double... params) {
-
-            HttpClient httpclient = new DefaultHttpClient();
-            HttpPost httppost = new HttpPost("http://10.47.12.57:3000/update");
-
-            SharedPreferences settings = getSharedPreferences("PREFS_NAME", 0);
-            String userID = settings.getString("USER_ID", "-1");
-
-            try {
-                // Add your data
-                List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(3);
-                nameValuePairs.add(new BasicNameValuePair("userID", userID));
-                nameValuePairs.add(new BasicNameValuePair("latitude", params[0]+""));
-                nameValuePairs.add(new BasicNameValuePair("longitude", params[1]+""));
-
-                httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
-                HttpResponse response = httpclient.execute(httppost);
-
-            } catch (ClientProtocolException e) {
-                // TODO Auto-generated catch block
-            } catch (IOException e) {
-                // TODO Auto-generated catch block
-            }
-            /*
-            try {
-                URL url = new URL("http://10.47.12.57:3000/update");
-                SharedPreferences settings = getSharedPreferences("PREFS_NAME", 0);
-                String userID = settings.getString("USER_ID", "-1");
-
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setReadTimeout(10000);
-                conn.setConnectTimeout(15000);
-                conn.setRequestMethod("POST");
-                conn.setDoInput(true);
-                conn.setDoOutput(true);
-
-                StringBuilder result = new StringBuilder();
-                result.append(URLEncoder.encode("phoneID", "UTF-8"));
-                result.append("=");
-                result.append(URLEncoder.encode(userID, "UTF-8"));
-                result.append("&");
-                result.append(URLEncoder.encode("latitude", "UTF-8"));
-                result.append("=");
-                result.append(URLEncoder.encode(params[0]+"", "UTF-8"));
-                result.append("&");
-                result.append(URLEncoder.encode("longitude", "UTF-8"));
-                result.append("=");
-                result.append(URLEncoder.encode(params[1]+"", "UTF-8"));
-                Log.d("Result", result.toString());
-                OutputStream os = conn.getOutputStream();
-                BufferedWriter writer = new BufferedWriter(
-                        new OutputStreamWriter(os, "UTF-8"));
-                writer.write(result.toString());
-                writer.flush();
-                writer.close();
-                os.close();
-
-                conn.connect();
-
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            */
-            return null;
-        }
-
-
-    }
 
 }

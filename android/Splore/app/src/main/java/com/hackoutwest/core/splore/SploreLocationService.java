@@ -20,8 +20,13 @@ import android.widget.Toast;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 
+import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 
 import java.io.BufferedWriter;
@@ -54,7 +59,7 @@ public class SploreLocationService extends Service  {
     public void onCreate() {
         super.onCreate();
         Log.d("Service", "Service is created");
-        intent = new Intent("com.hackoutwest.broadcast.gps.location_change");
+
 
     }
 
@@ -70,8 +75,8 @@ public class SploreLocationService extends Service  {
 
         LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         MyLocationListener listener = new MyLocationListener();
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 3, listener);
-        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 3, listener);
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, listener);
+        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, listener);
 
         Intent i = new Intent(this, MainActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(this,0,i,0);
@@ -90,10 +95,8 @@ public class SploreLocationService extends Service  {
 
         @Override
         public void onLocationChanged(Location location) {
-
-            intent.putExtra("LONGITUD", location.getLongitude());
-            intent.putExtra("LATITUDE", location.getLatitude());
-            sendBroadcast(intent);
+            Log.d("Service", "Location changed");
+            new LocationTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, location.getLongitude(),location.getLatitude());
 
         }
 
@@ -112,5 +115,40 @@ public class SploreLocationService extends Service  {
         public void onProviderDisabled(String provider) {
 
         }
+    }
+
+    private class LocationTask extends AsyncTask<Double, Result, Void> {
+
+        @Override
+        protected Void doInBackground(Double... params) {
+
+            Log.d("Service", "Asynctask called");
+
+            HttpClient httpclient = new DefaultHttpClient();
+            HttpPost httppost = new HttpPost("http://10.47.12.58:3000/update");
+
+            SharedPreferences settings = getSharedPreferences("PREFS_NAME", 0);
+            String userID = settings.getString("USER_ID", "-1");
+
+            try {
+                // Add your data
+                List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(3);
+                nameValuePairs.add(new BasicNameValuePair("userID", userID));
+                nameValuePairs.add(new BasicNameValuePair("latitude", params[0]+""));
+                nameValuePairs.add(new BasicNameValuePair("longitude", params[1] + ""));
+
+                httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+                HttpResponse response = httpclient.execute(httppost);
+
+            } catch (ClientProtocolException e) {
+                // TODO Auto-generated catch block
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+            }
+
+            return null;
+        }
+
+
     }
 }
